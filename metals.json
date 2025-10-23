@@ -1,69 +1,69 @@
 {
-  "updatedAt": "2025-10-23T15:47:30.540Z",
+  "updatedAt": "2025-10-23T15:48:33.841Z",
   "items": [
     {
       "code": "gold",
       "symbol": "Au",
       "name": "Gold",
       "unit": "USD/oz t",
-      "nativePrice": 4142.195,
-      "usdPerGram": 133.174562
+      "nativePrice": 4139.88,
+      "usdPerGram": 133.100133
     },
     {
       "code": "platinum",
       "symbol": "Pt",
       "name": "Platinum",
       "unit": "USD/oz t",
-      "nativePrice": 1626.956,
-      "usdPerGram": 52.307811
+      "nativePrice": 1624.117,
+      "usdPerGram": 52.216535
     },
     {
       "code": "palladium",
       "symbol": "Pd",
       "name": "Palladium",
       "unit": "USD/oz t",
-      "nativePrice": 1465.685,
-      "usdPerGram": 47.122832
+      "nativePrice": 1464.386,
+      "usdPerGram": 47.081068
     },
     {
       "code": "silver",
       "symbol": "Ag",
       "name": "Silver",
       "unit": "USD/oz t",
-      "nativePrice": 49.125,
-      "usdPerGram": 1.579404
+      "nativePrice": 49.1385,
+      "usdPerGram": 1.579838
     },
     {
       "code": "nickel",
       "symbol": "Ni",
       "name": "Nickel",
       "unit": "USD/ton",
-      "nativePrice": 15345,
-      "usdPerGram": 0.015345
+      "nativePrice": 15342,
+      "usdPerGram": 0.015342
     },
     {
       "code": "copper",
       "symbol": "Cu",
       "name": "Copper",
       "unit": "USD/ton",
-      "nativePrice": 11342.5501,
-      "usdPerGram": 0.011343
+      "nativePrice": 11350.6191,
+      "usdPerGram": 0.011351
     },
     {
       "code": "zinc",
       "symbol": "Zn",
       "name": "Zinc",
       "unit": "USD/ton",
-      "nativePrice": 3017.34,
-      "usdPerGram": 0.003017
+      "nativePrice": 3018.34,
+      "usdPerGram": 0.003018
     },
     {
       "code": "aluminum",
       "symbol": "Al",
       "name": "Aluminum",
       "unit": "USD/ton",
-      "nativePrice": 2852.6,
-      "usdPerGram": 0.002853
+      "nativePrice": 2854.3,
+      "usdPerGram": 0.002854
     },
     {
       "code": "lead",
