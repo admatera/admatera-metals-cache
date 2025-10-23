@@ -1,0 +1,63 @@
+name: Cache Metals (2× daily)
+
+on:
+  schedule:
+    - cron: '35 13 * * 1-5'   # 09:35 ET (13:35 UTC)
+    - cron: '05 21 * * 1-5'   # 16:05 ET (21:05 UTC)
+  workflow_dispatch:
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch latest metals
+        env:
+          API_KEY: ${{ secrets.METALS_API_KEY }}
+        run: |
+          curl -s "https://api.metals.dev/v1/latest?api_key=${API_KEY}&currency=USD" > metals-raw.json
+          node -e '
+            const fs = require("fs");
+            const raw = JSON.parse(fs.readFileSync("metals-raw.json","utf8"));
+            const m = raw.metals || {};
+            const unitMap = {
+              "toz": {gPerUnit:31.1035,label:"USD/oz t"},
+              "t":   {gPerUnit:1_000_000,label:"USD/ton"},
+              "mt":  {gPerUnit:1_000_000,label:"USD/ton"}
+            };
+            const pick = {
+              gold:{s:"Au",n:"Gold",u:"toz"},
+              silver:{s:"Ag",n:"Silver",u:"toz"},
+              platinum:{s:"Pt",n:"Platinum",u:"toz"},
+              palladium:{s:"Pd",n:"Palladium",u:"toz"},
+              copper:{s:"Cu",n:"Copper",u:"t"},
+              aluminum:{s:"Al",n:"Aluminum",u:"t"},
+              nickel:{s:"Ni",n:"Nickel",u:"t"},
+              lead:{s:"Pb",n:"Lead",u:"t"},
+              zinc:{s:"Zn",n:"Zinc",u:"t"}
+            };
+            const out={updatedAt:new Date().toISOString(),items:[]};
+            for(const k of Object.keys(pick)){
+              const meta=pick[k],price=m[k];
+              if(!price)continue;
+              const u=unitMap[meta.u];
+              const usdPerGram=price/u.gPerUnit;
+              out.items.push({
+                code:k,symbol:meta.s,name:meta.n,
+                unit:u.label,nativePrice:price,
+                usdPerGram:+usdPerGram.toFixed(6)
+              });
+            }
+            out.items.sort((a,b)=>b.usdPerGram-a.usdPerGram);
+            fs.writeFileSync("metals.json",JSON.stringify(out,null,2));
+          '
+
+      - name: Commit & push
+        run: |
+          git config user.name "admatera-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add metals-raw.json metals.json
+          git commit -m "update cache $(date -u +%F %T UTC)" || echo "no changes"
+          git push
