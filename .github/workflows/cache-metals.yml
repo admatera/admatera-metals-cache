@@ -6,6 +6,9 @@ on:
     - cron: '05 21 * * 1-5'   # 16:05 ET (21:05 UTC)
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   fetch:
     runs-on: ubuntu-latest
@@ -19,45 +22,44 @@ jobs:
         run: |
           curl -s "https://api.metals.dev/v1/latest?api_key=${API_KEY}&currency=USD" > metals-raw.json
           node -e '
-            const fs = require("fs");
-            const raw = JSON.parse(fs.readFileSync("metals-raw.json","utf8"));
-            const m = raw.metals || {};
-            const unitMap = {
-              "toz": {gPerUnit:31.1035,label:"USD/oz t"},
-              "t":   {gPerUnit:1_000_000,label:"USD/ton"},
-              "mt":  {gPerUnit:1_000_000,label:"USD/ton"}
-            };
-            const pick = {
-              gold:{s:"Au",n:"Gold",u:"toz"},
-              silver:{s:"Ag",n:"Silver",u:"toz"},
-              platinum:{s:"Pt",n:"Platinum",u:"toz"},
-              palladium:{s:"Pd",n:"Palladium",u:"toz"},
-              copper:{s:"Cu",n:"Copper",u:"t"},
-              aluminum:{s:"Al",n:"Aluminum",u:"t"},
-              nickel:{s:"Ni",n:"Nickel",u:"t"},
-              lead:{s:"Pb",n:"Lead",u:"t"},
-              zinc:{s:"Zn",n:"Zinc",u:"t"}
-            };
-            const out={updatedAt:new Date().toISOString(),items:[]};
-            for(const k of Object.keys(pick)){
-              const meta=pick[k],price=m[k];
-              if(!price)continue;
-              const u=unitMap[meta.u];
-              const usdPerGram=price/u.gPerUnit;
-              out.items.push({
-                code:k,symbol:meta.s,name:meta.n,
-                unit:u.label,nativePrice:price,
-                usdPerGram:+usdPerGram.toFixed(6)
-              });
-            }
-            out.items.sort((a,b)=>b.usdPerGram-a.usdPerGram);
-            fs.writeFileSync("metals.json",JSON.stringify(out,null,2));
+          const fs = require("fs");
+          const raw = JSON.parse(fs.readFileSync("metals-raw.json","utf8"));
+          const m = raw.metals || {};
+          const unitMap = {
+            "toz": { gPerUnit:31.1035, label:"USD/oz t" },
+            "mt" : { gPerUnit:1_000_000, label:"USD/ton" }
+          };
+          const pick = {
+            gold:m.gold, silver:m.silver, platinum:m.platinum, palladium:m.palladium,
+            copper:m.copper, aluminum:m.aluminum, nickel:m.nickel, lead:m.lead, zinc:m.zinc
+          };
+          const metaMap = {
+            gold:{s:"Au",n:"Gold",u:"toz"}, silver:{s:"Ag",n:"Silver",u:"toz"},
+            platinum:{s:"Pt",n:"Platinum",u:"toz"}, palladium:{s:"Pd",n:"Palladium",u:"toz"},
+            copper:{s:"Cu",n:"Copper",u:"mt"}, aluminum:{s:"Al",n:"Aluminum",u:"mt"},
+            nickel:{s:"Ni",n:"Nickel",u:"mt"}, lead:{s:"Pb",n:"Lead",u:"mt"}, zinc:{s:"Zn",n:"Zinc",u:"mt"}
+          };
+          const out = { updatedAt:new Date().toISOString(), items:[] };
+          for(const code of Object.keys(pick)){
+            const price = pick[code];
+            if(!price) continue;
+            const meta = metaMap[code];
+            const u = unitMap[meta.u];
+            const usdPerGram = price / u.gPerUnit;
+            out.items.push({
+              code, symbol:meta.s, name:meta.n,
+              unit:u.label, nativePrice:price,
+              usdPerGram:+usdPerGram.toFixed(6)
+            });
+          }
+          out.items.sort((a,b)=>b.usdPerGram-a.usdPerGram);
+          fs.writeFileSync("metals.json", JSON.stringify(out,null,2));
           '
 
       - name: Commit & push
         run: |
-          git config user.name "admatera-bot"
+          git config user.name  "admatera-bot"
           git config user.email "actions@users.noreply.github.com"
           git add metals-raw.json metals.json
-          git commit -m "update cache $(date -u +%F %T UTC)" || echo "no changes"
+          git commit -m "update cache $(date -u +'%F %T UTC')" || echo "no changes"
           git push
