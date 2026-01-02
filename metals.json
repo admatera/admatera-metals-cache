@@ -1,61 +1,61 @@
 {
-  "updatedAt": "2026-01-02T13:51:56.354Z",
+  "updatedAt": "2026-01-02T21:24:04.010Z",
   "items": [
     {
       "code": "gold",
       "symbol": "Au",
       "name": "Gold",
       "unit": "USD/oz t",
-      "nativePrice": 4369.635,
-      "usdPerGram": 140.486923
+      "nativePrice": 4329.05,
+      "usdPerGram": 139.182086
     },
     {
       "code": "platinum",
       "symbol": "Pt",
       "name": "Platinum",
       "unit": "USD/oz t",
-      "nativePrice": 2121.927,
-      "usdPerGram": 68.221486
+      "nativePrice": 2132.325,
+      "usdPerGram": 68.55579
     },
     {
       "code": "palladium",
       "symbol": "Pd",
       "name": "Palladium",
       "unit": "USD/oz t",
-      "nativePrice": 1635.414,
-      "usdPerGram": 52.579742
+      "nativePrice": 1633.524,
+      "usdPerGram": 52.518977
     },
     {
       "code": "silver",
       "symbol": "Ag",
       "name": "Silver",
       "unit": "USD/oz t",
-      "nativePrice": 74.0155,
-      "usdPerGram": 2.379652
+      "nativePrice": 72.5165,
+      "usdPerGram": 2.331458
     },
     {
       "code": "nickel",
       "symbol": "Ni",
       "name": "Nickel",
       "unit": "USD/ton",
-      "nativePrice": 16882,
-      "usdPerGram": 0.016882
+      "nativePrice": 16747,
+      "usdPerGram": 0.016747
     },
     {
       "code": "copper",
       "symbol": "Cu",
       "name": "Copper",
       "unit": "USD/ton",
-      "nativePrice": 12630.0508,
-      "usdPerGram": 0.01263
+      "nativePrice": 12616.4924,
+      "usdPerGram": 0.012616
     },
     {
       "code": "zinc",
       "symbol": "Zn",
       "name": "Zinc",
       "unit": "USD/ton",
-      "nativePrice": 3132.44,
-      "usdPerGram": 0.003132
+      "nativePrice": 3125.59,
+      "usdPerGram": 0.003126
     },
     {
       "code": "aluminum",
@@ -70,8 +70,8 @@
       "symbol": "Pb",
       "name": "Lead",
       "unit": "USD/ton",
-      "nativePrice": 2007.8,
-      "usdPerGram": 0.002008
+      "nativePrice": 1986.1,
+      "usdPerGram": 0.001986
     }
   ]
 }
