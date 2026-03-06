@@ -1,69 +1,69 @@
 {
-  "updatedAt": "2026-03-06T14:08:22.949Z",
+  "updatedAt": "2026-03-06T21:38:07.717Z",
   "items": [
     {
       "code": "gold",
       "symbol": "Au",
       "name": "Gold",
       "unit": "USD/oz t",
-      "nativePrice": 5088.41,
-      "usdPerGram": 163.596058
+      "nativePrice": 5170.765,
+      "usdPerGram": 166.243831
     },
     {
       "code": "platinum",
       "symbol": "Pt",
       "name": "Platinum",
       "unit": "USD/oz t",
-      "nativePrice": 2090.743,
-      "usdPerGram": 67.218898
+      "nativePrice": 2136.554,
+      "usdPerGram": 68.691755
     },
     {
       "code": "palladium",
       "symbol": "Pd",
       "name": "Palladium",
       "unit": "USD/oz t",
-      "nativePrice": 1625.177,
-      "usdPerGram": 52.250615
+      "nativePrice": 1622.567,
+      "usdPerGram": 52.166701
     },
     {
       "code": "silver",
       "symbol": "Ag",
       "name": "Silver",
       "unit": "USD/oz t",
-      "nativePrice": 82.6195,
-      "usdPerGram": 2.656277
+      "nativePrice": 84.321,
+      "usdPerGram": 2.710981
     },
     {
       "code": "nickel",
       "symbol": "Ni",
       "name": "Nickel",
       "unit": "USD/ton",
-      "nativePrice": 17275,
-      "usdPerGram": 0.017275
+      "nativePrice": 17431,
+      "usdPerGram": 0.017431
     },
     {
       "code": "copper",
       "symbol": "Cu",
       "name": "Copper",
       "unit": "USD/ton",
-      "nativePrice": 12771.3231,
-      "usdPerGram": 0.012771
+      "nativePrice": 12890.3067,
+      "usdPerGram": 0.01289
     },
     {
       "code": "aluminum",
       "symbol": "Al",
       "name": "Aluminum",
       "unit": "USD/ton",
-      "nativePrice": 3346.1,
-      "usdPerGram": 0.003346
+      "nativePrice": 3420.1,
+      "usdPerGram": 0.00342
     },
     {
       "code": "zinc",
       "symbol": "Zn",
       "name": "Zinc",
       "unit": "USD/ton",
-      "nativePrice": 3240.14,
-      "usdPerGram": 0.00324
+      "nativePrice": 3314.84,
+      "usdPerGram": 0.003315
     },
     {
       "code": "lead",
