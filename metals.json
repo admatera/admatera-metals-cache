@@ -1,77 +1,77 @@
 {
-  "updatedAt": "2026-03-19T21:45:59.940Z",
+  "updatedAt": "2026-03-20T14:25:34.452Z",
   "items": [
     {
       "code": "gold",
       "symbol": "Au",
       "name": "Gold",
       "unit": "USD/oz t",
-      "nativePrice": 4649.89,
-      "usdPerGram": 149.497323
+      "nativePrice": 4572.45,
+      "usdPerGram": 147.007571
     },
     {
       "code": "platinum",
       "symbol": "Pt",
       "name": "Platinum",
       "unit": "USD/oz t",
-      "nativePrice": 1973.5,
-      "usdPerGram": 63.449451
+      "nativePrice": 1950.998,
+      "usdPerGram": 62.725995
     },
     {
       "code": "palladium",
       "symbol": "Pd",
       "name": "Palladium",
       "unit": "USD/oz t",
-      "nativePrice": 1447.638,
-      "usdPerGram": 46.542608
+      "nativePrice": 1407.406,
+      "usdPerGram": 45.24912
     },
     {
       "code": "silver",
       "symbol": "Ag",
       "name": "Silver",
       "unit": "USD/oz t",
-      "nativePrice": 72.8235,
-      "usdPerGram": 2.341328
+      "nativePrice": 68.91,
+      "usdPerGram": 2.215506
     },
     {
       "code": "nickel",
       "symbol": "Ni",
       "name": "Nickel",
       "unit": "USD/ton",
-      "nativePrice": 17029,
-      "usdPerGram": 0.017029
+      "nativePrice": 16835,
+      "usdPerGram": 0.016835
     },
     {
       "code": "copper",
       "symbol": "Cu",
       "name": "Copper",
       "unit": "USD/ton",
-      "nativePrice": 12213.7516,
-      "usdPerGram": 0.012214
+      "nativePrice": 11870.4475,
+      "usdPerGram": 0.01187
     },
     {
       "code": "aluminum",
       "symbol": "Al",
       "name": "Aluminum",
       "unit": "USD/ton",
-      "nativePrice": 3229.8,
-      "usdPerGram": 0.00323
+      "nativePrice": 3183.6,
+      "usdPerGram": 0.003184
     },
     {
       "code": "zinc",
       "symbol": "Zn",
       "name": "Zinc",
       "unit": "USD/ton",
-      "nativePrice": 3071.04,
-      "usdPerGram": 0.003071
+      "nativePrice": 3043.39,
+      "usdPerGram": 0.003043
     },
     {
       "code": "lead",
       "symbol": "Pb",
       "name": "Lead",
       "unit": "USD/ton",
-      "nativePrice": 1887.8,
-      "usdPerGram": 0.001888
+      "nativePrice": 1888.9,
+      "usdPerGram": 0.001889
     }
   ]
 }
