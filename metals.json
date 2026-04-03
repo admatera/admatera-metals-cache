@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-04-02T21:49:03.969Z",
+  "updatedAt": "2026-04-03T14:24:47.607Z",
   "items": [
     {
       "code": "gold",
@@ -14,16 +14,16 @@
       "symbol": "Pt",
       "name": "Platinum",
       "unit": "USD/oz t",
-      "nativePrice": 1994.5,
-      "usdPerGram": 64.124616
+      "nativePrice": 1978,
+      "usdPerGram": 63.594129
     },
     {
       "code": "palladium",
       "symbol": "Pd",
       "name": "Palladium",
       "unit": "USD/oz t",
-      "nativePrice": 1509,
-      "usdPerGram": 48.51544
+      "nativePrice": 1501.5,
+      "usdPerGram": 48.27431
     },
     {
       "code": "silver",
