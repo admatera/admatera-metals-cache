@@ -2,8 +2,8 @@ name: Cache Metals (2× daily)
 
 on:
   schedule:
-    - cron: '35 13 * * 1-5'   # 09:35 ET (13:35 UTC)
-    - cron: '05 21 * * 1-5'   # 16:05 ET (21:05 UTC)
+    - cron: '45 13 * * 1-5'   # 09:45 ET (13:45 UTC)
+    - cron: '35 20 * * 1-5'   # 16:35 ET (20:35 UTC)
   workflow_dispatch:
 
 permissions:
