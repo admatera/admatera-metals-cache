@@ -2,8 +2,10 @@ name: Cache Metals (2× daily)
 
 on:
   schedule:
-    - cron: '45 13 * * 1-5'   # 09:45 ET (13:45 UTC)
-    - cron: '35 20 * * 1-5'   # 16:35 ET (20:35 UTC)
+    - cron: '45 13 * * 1-5'   # 09:45 ET during daylight saving
+    - cron: '45 14 * * 1-5'   # 09:45 ET during standard time
+    - cron: '35 20 * * 1-5'   # 16:35 ET during daylight saving
+    - cron: '35 21 * * 1-5'   # 16:35 ET during standard time
   workflow_dispatch:
 
 permissions:
@@ -14,18 +16,53 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Setup Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
 
       - name: Fetch latest metals
         env:
           API_KEY: ${{ secrets.METALS_API_KEY }}
+          ALLOW_OFF_SCHEDULE: ${{ vars.ALLOW_OFF_SCHEDULE || 'false' }}
         run: |
           set -euo pipefail
+
+          node -e '
+          const allowOffSchedule = String(process.env.ALLOW_OFF_SCHEDULE || "").toLowerCase() === "true";
+          const parts = new Intl.DateTimeFormat("en-US", {
+            timeZone:"America/New_York",
+            weekday:"short",
+            hour:"numeric",
+            minute:"numeric",
+            hour12:false
+          }).formatToParts(new Date());
+          const p = Object.fromEntries(parts.filter(x => x.type !== "literal").map(x => [x.type, x.value]));
+          const weekday = p.weekday;
+          const mins = Number(p.hour) * 60 + Number(p.minute);
+          const windows = [
+            { name:"09:45 ET", start:9 * 60 + 35, end:10 * 60 + 15 },
+            { name:"16:35 ET", start:16 * 60 + 25, end:17 * 60 + 5 }
+          ];
+          const slot = windows.find(w => mins >= w.start && mins <= w.end);
+          const businessDay = weekday !== "Sat" && weekday !== "Sun";
+
+          if (!allowOffSchedule && (!businessDay || !slot)) {
+            console.log(`Skipping off-schedule metals cache run. ET ${weekday} ${p.hour}:${String(p.minute).padStart(2,"0")}.`);
+            console.log("Approved windows: weekdays around 09:45 ET and 16:35 ET.");
+            require("fs").writeFileSync(".skip-metals-cache", "1");
+            process.exit(0);
+          }
+
+          console.log(`Proceeding with metals cache run${slot ? ` for ${slot.name}` : " via override"}.`);
+          '
+
+          if [ -f .skip-metals-cache ]; then
+            exit 0
+          fi
+
           curl -fSsL --retry 3 --retry-delay 5 --max-time 60 \
             "https://api.metals.dev/v1/latest?api_key=${API_KEY}&currency=USD" \
             > metals-raw.json
@@ -51,7 +88,15 @@ jobs:
             nickel:{s:"Ni",n:"Nickel",u:"mt"}, lead:{s:"Pb",n:"Lead",u:"mt"}, zinc:{s:"Zn",n:"Zinc",u:"mt"}
           };
 
-          const out = { updatedAt:new Date().toISOString(), items:[] };
+          const cacheUpdatedAt = new Date().toISOString();
+          const marketUpdatedAt = raw?.timestamps?.metal || raw?.timestamp || raw?.date || null;
+          const out = {
+            updatedAt:cacheUpdatedAt,
+            cacheUpdatedAt,
+            marketUpdatedAt,
+            source:"metals.dev",
+            items:[]
+          };
           for (const code of Object.keys(pick)) {
             const price = pick[code];
             if (price == null) continue;
