@@ -2,10 +2,14 @@ name: Cache Metals (2× daily)
 
 on:
   schedule:
-    - cron: '45 13 * * 1-5'   # 09:45 ET during daylight saving
-    - cron: '45 14 * * 1-5'   # 09:45 ET during standard time
-    - cron: '35 20 * * 1-5'   # 16:35 ET during daylight saving
-    - cron: '35 21 * * 1-5'   # 16:35 ET during standard time
+    - cron: '45-59/5 13 * * 1-5' # 09:45-09:55 ET during daylight saving
+    - cron: '0-15/5 14 * * 1-5'  # 10:00-10:15 ET during daylight saving
+    - cron: '45-59/5 14 * * 1-5' # 09:45-09:55 ET during standard time
+    - cron: '0-15/5 15 * * 1-5'  # 10:00-10:15 ET during standard time
+    - cron: '35-59/5 20 * * 1-5' # 16:35-16:55 ET during daylight saving
+    - cron: '0-5/5 21 * * 1-5'   # 17:00-17:05 ET during daylight saving
+    - cron: '35-59/5 21 * * 1-5' # 16:35-16:55 ET during standard time
+    - cron: '0-5/5 22 * * 1-5'   # 17:00-17:05 ET during standard time
   workflow_dispatch:
 
 permissions:
@@ -16,12 +20,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Fetch latest metals
         env:
@@ -35,6 +39,9 @@ jobs:
           const parts = new Intl.DateTimeFormat("en-US", {
             timeZone:"America/New_York",
             weekday:"short",
+            year:"numeric",
+            month:"2-digit",
+            day:"2-digit",
             hour:"numeric",
             minute:"numeric",
             hour12:false
@@ -43,8 +50,8 @@ jobs:
           const weekday = p.weekday;
           const mins = Number(p.hour) * 60 + Number(p.minute);
           const windows = [
-            { name:"09:45 ET", start:9 * 60 + 35, end:10 * 60 + 15 },
-            { name:"16:35 ET", start:16 * 60 + 25, end:17 * 60 + 5 }
+            { name:"09:45 ET", start:9 * 60 + 45, end:10 * 60 + 15 },
+            { name:"16:35 ET", start:16 * 60 + 35, end:17 * 60 + 5 }
           ];
           const slot = windows.find(w => mins >= w.start && mins <= w.end);
           const businessDay = weekday !== "Sat" && weekday !== "Sun";
@@ -56,6 +63,24 @@ jobs:
             process.exit(0);
           }
 
+          const slotName = slot?.name || "manual";
+          const cacheSlotKey = `${p.year}-${p.month}-${p.day}-${slotName.replace(/[^0-9]/g,"")}`;
+
+          if (!allowOffSchedule) {
+            try {
+              const prev = JSON.parse(require("fs").readFileSync("metals.json","utf8"));
+              if (prev?.cacheSlotKey === cacheSlotKey) {
+                console.log(`Skipping duplicate metals cache slot ${cacheSlotKey}.`);
+                require("fs").writeFileSync(".skip-metals-cache", "1");
+                process.exit(0);
+              }
+            } catch {}
+          }
+
+          require("fs").writeFileSync(
+            ".metals-slot.json",
+            JSON.stringify({ cacheSlotKey, marketWindowET:slotName }, null, 2)
+          );
           console.log(`Proceeding with metals cache run${slot ? ` for ${slot.name}` : " via override"}.`);
           '
 
@@ -71,6 +96,8 @@ jobs:
           const fs = require("fs");
           const raw = JSON.parse(fs.readFileSync("metals-raw.json","utf8"));
           if (!raw || !raw.metals) { throw new Error("No metals field in API response"); }
+          let slotMeta = {};
+          try { slotMeta = JSON.parse(fs.readFileSync(".metals-slot.json","utf8")); } catch {}
           const m = raw.metals;
 
           const unitMap = {
@@ -94,6 +121,8 @@ jobs:
             updatedAt:cacheUpdatedAt,
             cacheUpdatedAt,
             marketUpdatedAt,
+            cacheSlotKey:slotMeta.cacheSlotKey || null,
+            marketWindowET:slotMeta.marketWindowET || null,
             source:"metals.dev",
             items:[]
           };
