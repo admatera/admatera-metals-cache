@@ -2,14 +2,9 @@ name: Cache Metals (2× daily)
 
 on:
   schedule:
-    - cron: '45-59/5 13 * * 1-5' # 09:45-09:55 ET during daylight saving
-    - cron: '0-15/5 14 * * 1-5'  # 10:00-10:15 ET during daylight saving
-    - cron: '45-59/5 14 * * 1-5' # 09:45-09:55 ET during standard time
-    - cron: '0-15/5 15 * * 1-5'  # 10:00-10:15 ET during standard time
-    - cron: '35-59/5 20 * * 1-5' # 16:35-16:55 ET during daylight saving
-    - cron: '0-5/5 21 * * 1-5'   # 17:00-17:05 ET during daylight saving
-    - cron: '35-59/5 21 * * 1-5' # 16:35-16:55 ET during standard time
-    - cron: '0-5/5 22 * * 1-5'   # 17:00-17:05 ET during standard time
+    - cron: '*/5 13-17 * * 1-5' # Continuous morning candidates; ET guard accepts 09:45-12:15
+    - cron: '*/5 20-23 * * 1-5' # Continuous evening candidates before UTC midnight
+    - cron: '*/5 0-1 * * 2-6'   # Continuous evening candidates after UTC midnight
   workflow_dispatch:
 
 permissions:
