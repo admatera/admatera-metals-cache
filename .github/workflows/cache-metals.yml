@@ -28,6 +28,7 @@ jobs:
           node-version: '24'
 
       - name: Fetch latest metals
+        id: fetch_metals
         env:
           API_KEY: ${{ secrets.METALS_API_KEY }}
           ALLOW_OFF_SCHEDULE: ${{ vars.ALLOW_OFF_SCHEDULE || 'false' }}
@@ -50,15 +51,16 @@ jobs:
           const weekday = p.weekday;
           const mins = Number(p.hour) * 60 + Number(p.minute);
           const windows = [
-            { name:"09:45 ET", start:9 * 60 + 45, end:10 * 60 + 15 },
-            { name:"16:35 ET", start:16 * 60 + 35, end:17 * 60 + 5 }
+            { name:"09:45 ET", start:9 * 60 + 45, end:12 * 60 + 15 },
+            { name:"16:35 ET", start:16 * 60 + 35, end:20 * 60 + 30 }
           ];
           const slot = windows.find(w => mins >= w.start && mins <= w.end);
           const businessDay = weekday !== "Sat" && weekday !== "Sun";
 
           if (!allowOffSchedule && (!businessDay || !slot)) {
             console.log(`Skipping off-schedule metals cache run. ET ${weekday} ${p.hour}:${String(p.minute).padStart(2,"0")}.`);
-            console.log("Approved windows: weekdays around 09:45 ET and 16:35 ET.");
+            console.log("Approved runtime windows: weekdays 09:45-12:15 ET and 16:35-20:30 ET. Target market slots remain 09:45 ET and 16:35 ET.");
+            require("fs").appendFileSync(process.env.GITHUB_OUTPUT, "skip=true\n");
             require("fs").writeFileSync(".skip-metals-cache", "1");
             process.exit(0);
           }
@@ -71,6 +73,7 @@ jobs:
               const prev = JSON.parse(require("fs").readFileSync("metals.json","utf8"));
               if (prev?.cacheSlotKey === cacheSlotKey) {
                 console.log(`Skipping duplicate metals cache slot ${cacheSlotKey}.`);
+                require("fs").appendFileSync(process.env.GITHUB_OUTPUT, "skip=true\n");
                 require("fs").writeFileSync(".skip-metals-cache", "1");
                 process.exit(0);
               }
@@ -81,10 +84,12 @@ jobs:
             ".metals-slot.json",
             JSON.stringify({ cacheSlotKey, marketWindowET:slotName }, null, 2)
           );
+          require("fs").appendFileSync(process.env.GITHUB_OUTPUT, "skip=false\n");
           console.log(`Proceeding with metals cache run${slot ? ` for ${slot.name}` : " via override"}.`);
           '
 
           if [ -f .skip-metals-cache ]; then
+            rm .skip-metals-cache
             exit 0
           fi
 
@@ -144,6 +149,7 @@ jobs:
           '
 
       - name: Commit & push
+        if: steps.fetch_metals.outputs.skip != 'true'
         run: |
           git config user.name  "admatera-bot"
           git config user.email "actions@users.noreply.github.com"
