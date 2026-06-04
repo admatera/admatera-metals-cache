@@ -1,14 +1,20 @@
-name: Cache Metals (2× daily)
+name: Cache Metals (2x daily)
 
 on:
   schedule:
-    - cron: '*/5 13-17 * * 1-5' # Continuous morning candidates; ET guard accepts 09:45-12:15
-    - cron: '*/5 20-23 * * 1-5' # Continuous evening candidates before UTC midnight
-    - cron: '*/5 0-1 * * 2-6'   # Continuous evening candidates after UTC midnight
+    # GitHub schedules can run late. These broad runways let GitHub be imprecise
+    # while the slot guard below still permits only one real API pull per slot.
+    - cron: '*/15 13-20 * * 1-5' # Morning runway for 09:45 ET slot, DST + standard time
+    - cron: '*/15 20-23 * * 1-5' # Evening runway, same UTC day
+    - cron: '*/15 0-4 * * 2-6'   # Evening runway, next UTC day
   workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: metals-cache-main
+  cancel-in-progress: false
 
 jobs:
   fetch:
@@ -26,61 +32,62 @@ jobs:
         id: fetch_metals
         env:
           API_KEY: ${{ secrets.METALS_API_KEY }}
-          ALLOW_OFF_SCHEDULE: ${{ vars.ALLOW_OFF_SCHEDULE || 'false' }}
         run: |
           set -euo pipefail
 
           node -e '
-          const allowOffSchedule = String(process.env.ALLOW_OFF_SCHEDULE || "").toLowerCase() === "true";
+          const fs = require("fs");
+          const now = new Date();
           const parts = new Intl.DateTimeFormat("en-US", {
-            timeZone:"America/New_York",
-            weekday:"short",
-            year:"numeric",
-            month:"2-digit",
-            day:"2-digit",
-            hour:"numeric",
-            minute:"numeric",
-            hour12:false
-          }).formatToParts(new Date());
-          const p = Object.fromEntries(parts.filter(x => x.type !== "literal").map(x => [x.type, x.value]));
-          const weekday = p.weekday;
+            timeZone: "America/New_York",
+            weekday: "short",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "numeric",
+            minute: "numeric",
+            hour12: false
+          }).formatToParts(now);
+
+          const p = Object.fromEntries(
+            parts.filter(x => x.type !== "literal").map(x => [x.type, x.value])
+          );
+
           const mins = Number(p.hour) * 60 + Number(p.minute);
+          const businessDay = p.weekday !== "Sat" && p.weekday !== "Sun";
           const windows = [
-            { name:"09:45 ET", start:9 * 60 + 45, end:12 * 60 + 15 },
-            { name:"16:35 ET", start:16 * 60 + 35, end:20 * 60 + 30 }
+            { name: "09:45 ET", key: "0945", start: 9 * 60 + 45, end: 15 * 60 + 30 },
+            { name: "16:35 ET", key: "1635", start: 16 * 60 + 35, end: 23 * 60 + 30 }
           ];
           const slot = windows.find(w => mins >= w.start && mins <= w.end);
-          const businessDay = weekday !== "Sat" && weekday !== "Sun";
 
-          if (!allowOffSchedule && (!businessDay || !slot)) {
-            console.log(`Skipping off-schedule metals cache run. ET ${weekday} ${p.hour}:${String(p.minute).padStart(2,"0")}.`);
-            console.log("Approved runtime windows: weekdays 09:45-12:15 ET and 16:35-20:30 ET. Target market slots remain 09:45 ET and 16:35 ET.");
-            require("fs").appendFileSync(process.env.GITHUB_OUTPUT, "skip=true\n");
-            require("fs").writeFileSync(".skip-metals-cache", "1");
+          if (!businessDay || !slot) {
+            console.log(`Skipping metals cache run outside approved windows. ET ${p.weekday} ${p.hour}:${String(p.minute).padStart(2, "0")}.`);
+            console.log("Approved windows: weekdays 09:45-15:30 ET and 16:35-23:30 ET.");
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, "skip=true\n");
+            fs.writeFileSync(".skip-metals-cache", "1");
             process.exit(0);
           }
 
-          const slotName = slot?.name || "manual";
-          const cacheSlotKey = `${p.year}-${p.month}-${p.day}-${slotName.replace(/[^0-9]/g,"")}`;
+          const cacheSlotKey = `${p.year}-${p.month}-${p.day}-${slot.key}`;
 
-          if (!allowOffSchedule) {
-            try {
-              const prev = JSON.parse(require("fs").readFileSync("metals.json","utf8"));
-              if (prev?.cacheSlotKey === cacheSlotKey) {
-                console.log(`Skipping duplicate metals cache slot ${cacheSlotKey}.`);
-                require("fs").appendFileSync(process.env.GITHUB_OUTPUT, "skip=true\n");
-                require("fs").writeFileSync(".skip-metals-cache", "1");
-                process.exit(0);
-              }
-            } catch {}
-          }
+          try {
+            const prev = JSON.parse(fs.readFileSync("metals.json", "utf8"));
+            if (prev?.cacheSlotKey === cacheSlotKey) {
+              console.log(`Skipping duplicate metals cache slot ${cacheSlotKey}.`);
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, "skip=true\n");
+              fs.writeFileSync(".skip-metals-cache", "1");
+              process.exit(0);
+            }
+          } catch {}
 
-          require("fs").writeFileSync(
-            ".metals-slot.json",
-            JSON.stringify({ cacheSlotKey, marketWindowET:slotName }, null, 2)
-          );
-          require("fs").appendFileSync(process.env.GITHUB_OUTPUT, "skip=false\n");
-          console.log(`Proceeding with metals cache run${slot ? ` for ${slot.name}` : " via override"}.`);
+          fs.writeFileSync(".metals-slot.json", JSON.stringify({
+            cacheSlotKey,
+            marketWindowET: slot.name
+          }, null, 2));
+
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, "skip=false\n");
+          console.log(`Proceeding with metals cache run for ${slot.name}; cacheSlotKey ${cacheSlotKey}.`);
           '
 
           if [ -f .skip-metals-cache ]; then
@@ -94,59 +101,75 @@ jobs:
 
           node -e '
           const fs = require("fs");
-          const raw = JSON.parse(fs.readFileSync("metals-raw.json","utf8"));
-          if (!raw || !raw.metals) { throw new Error("No metals field in API response"); }
-          let slotMeta = {};
-          try { slotMeta = JSON.parse(fs.readFileSync(".metals-slot.json","utf8")); } catch {}
-          const m = raw.metals;
+          const raw = JSON.parse(fs.readFileSync("metals-raw.json", "utf8"));
+          if (!raw || !raw.metals) throw new Error("No metals field in API response");
 
+          const slotMeta = JSON.parse(fs.readFileSync(".metals-slot.json", "utf8"));
+          const m = raw.metals;
           const unitMap = {
             toz: { gPerUnit: 31.1035, label: "USD/oz t" },
-            mt:  { gPerUnit: 1_000_000, label: "USD/ton" }
+            mt:  { gPerUnit: 1000000, label: "USD/ton" }
           };
           const pick = {
-            gold:m.gold, silver:m.silver, platinum:m.platinum, palladium:m.palladium,
-            copper:m.copper, aluminum:m.aluminum, nickel:m.nickel, lead:m.lead, zinc:m.zinc
+            gold: m.gold,
+            silver: m.silver,
+            platinum: m.platinum,
+            palladium: m.palladium,
+            copper: m.copper,
+            aluminum: m.aluminum,
+            nickel: m.nickel,
+            lead: m.lead,
+            zinc: m.zinc
           };
           const metaMap = {
-            gold:{s:"Au",n:"Gold",u:"toz"}, silver:{s:"Ag",n:"Silver",u:"toz"},
-            platinum:{s:"Pt",n:"Platinum",u:"toz"}, palladium:{s:"Pd",n:"Palladium",u:"toz"},
-            copper:{s:"Cu",n:"Copper",u:"mt"}, aluminum:{s:"Al",n:"Aluminum",u:"mt"},
-            nickel:{s:"Ni",n:"Nickel",u:"mt"}, lead:{s:"Pb",n:"Lead",u:"mt"}, zinc:{s:"Zn",n:"Zinc",u:"mt"}
+            gold: { s: "Au", n: "Gold", u: "toz" },
+            silver: { s: "Ag", n: "Silver", u: "toz" },
+            platinum: { s: "Pt", n: "Platinum", u: "toz" },
+            palladium: { s: "Pd", n: "Palladium", u: "toz" },
+            copper: { s: "Cu", n: "Copper", u: "mt" },
+            aluminum: { s: "Al", n: "Aluminum", u: "mt" },
+            nickel: { s: "Ni", n: "Nickel", u: "mt" },
+            lead: { s: "Pb", n: "Lead", u: "mt" },
+            zinc: { s: "Zn", n: "Zinc", u: "mt" }
           };
 
           const cacheUpdatedAt = new Date().toISOString();
           const marketUpdatedAt = raw?.timestamps?.metal || raw?.timestamp || raw?.date || null;
           const out = {
-            updatedAt:cacheUpdatedAt,
+            updatedAt: cacheUpdatedAt,
             cacheUpdatedAt,
             marketUpdatedAt,
-            cacheSlotKey:slotMeta.cacheSlotKey || null,
-            marketWindowET:slotMeta.marketWindowET || null,
-            source:"metals.dev",
-            items:[]
+            cacheSlotKey: slotMeta.cacheSlotKey,
+            marketWindowET: slotMeta.marketWindowET,
+            source: "metals.dev",
+            items: []
           };
+
           for (const code of Object.keys(pick)) {
             const price = pick[code];
             if (price == null) continue;
             const meta = metaMap[code];
-            const u = unitMap[meta.u];
-            const usdPerGram = price / u.gPerUnit;
+            const unit = unitMap[meta.u];
+            const usdPerGram = price / unit.gPerUnit;
             out.items.push({
-              code, symbol:meta.s, name:meta.n,
-              unit:u.label, nativePrice:price,
-              usdPerGram:+usdPerGram.toFixed(6)
+              code,
+              symbol: meta.s,
+              name: meta.n,
+              unit: unit.label,
+              nativePrice: price,
+              usdPerGram: +usdPerGram.toFixed(6)
             });
           }
-          if (!out.items.length) { throw new Error("No metal prices computed"); }
-          out.items.sort((a,b)=>b.usdPerGram-a.usdPerGram);
-          fs.writeFileSync("metals.json", JSON.stringify(out,null,2));
+
+          if (!out.items.length) throw new Error("No metal prices computed");
+          out.items.sort((a, b) => b.usdPerGram - a.usdPerGram);
+          fs.writeFileSync("metals.json", JSON.stringify(out, null, 2));
           '
 
       - name: Commit & push
         if: steps.fetch_metals.outputs.skip != 'true'
         run: |
-          git config user.name  "admatera-bot"
+          git config user.name "admatera-bot"
           git config user.email "actions@users.noreply.github.com"
           git add metals-raw.json metals.json
           git commit -m "update cache $(date -u +'%F %T UTC')" || echo "no changes"
