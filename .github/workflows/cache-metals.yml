@@ -4,8 +4,8 @@ on:
   schedule:
     # GitHub schedules can run late. These broad runways let GitHub be imprecise
     # while the slot guard below still permits only one real API pull per slot.
-    - cron: '*/15 13-20 * * 1-5' # Morning runway for 09:45 ET slot, DST + standard time
-    - cron: '*/15 20-23 * * 1-5' # Evening runway, same UTC day
+    - cron: '*/15 13-20 * * 1-5' # Morning runway for 09:45 ET slot; ET guard accepts 09:45-16:30
+    - cron: '*/15 20-23 * * 1-5' # Evening runway, same UTC day; ET guard accepts 16:31-23:30
     - cron: '*/15 0-4 * * 2-6'   # Evening runway, next UTC day
   workflow_dispatch:
 
@@ -56,14 +56,14 @@ jobs:
           const mins = Number(p.hour) * 60 + Number(p.minute);
           const businessDay = p.weekday !== "Sat" && p.weekday !== "Sun";
           const windows = [
-            { name: "09:45 ET", key: "0945", start: 9 * 60 + 45, end: 15 * 60 + 30 },
-            { name: "16:35 ET", key: "1635", start: 16 * 60 + 35, end: 23 * 60 + 30 }
+            { name: "09:45 ET", key: "0945", start: 9 * 60 + 45, end: 16 * 60 + 30 },
+            { name: "16:35 ET", key: "1635", start: 16 * 60 + 31, end: 23 * 60 + 30 }
           ];
           const slot = windows.find(w => mins >= w.start && mins <= w.end);
 
           if (!businessDay || !slot) {
             console.log(`Skipping metals cache run outside approved windows. ET ${p.weekday} ${p.hour}:${String(p.minute).padStart(2, "0")}.`);
-            console.log("Approved windows: weekdays 09:45-15:30 ET and 16:35-23:30 ET.");
+            console.log("Approved windows: weekdays 09:45-16:30 ET and 16:31-23:30 ET.");
             fs.appendFileSync(process.env.GITHUB_OUTPUT, "skip=true\n");
             fs.writeFileSync(".skip-metals-cache", "1");
             process.exit(0);
