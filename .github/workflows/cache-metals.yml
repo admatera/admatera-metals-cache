@@ -2,11 +2,10 @@ name: Cache Metals (2x daily)
 
 on:
   schedule:
-    # GitHub schedules can run late. These broad runways let GitHub be imprecise
-    # while the slot guard below still permits only one real API pull per slot.
-    - cron: '*/15 13-20 * * 1-5' # Morning runway for 09:45 ET slot; ET guard accepts 09:45-16:30
-    - cron: '*/15 20-23 * * 1-5' # Evening runway, same UTC day; ET guard accepts 16:31-23:30
-    - cron: '*/15 0-4 * * 2-6'   # Evening runway, next UTC day
+    # Candidate schedule; the workflow guard controls real cache writes.
+    - cron: '*/15 13-20 * * 1-5'
+    - cron: '*/15 20-23 * * 1-5'
+    - cron: '*/15 0-4 * * 2-6'
   workflow_dispatch:
 
 permissions:
@@ -62,8 +61,7 @@ jobs:
           const slot = windows.find(w => mins >= w.start && mins <= w.end);
 
           if (!businessDay || !slot) {
-            console.log(`Skipping metals cache run outside approved windows. ET ${p.weekday} ${p.hour}:${String(p.minute).padStart(2, "0")}.`);
-            console.log("Approved windows: weekdays 09:45-16:30 ET and 16:31-23:30 ET.");
+            console.log(`Skipping metals cache candidate. ET ${p.weekday} ${p.hour}:${String(p.minute).padStart(2, "0")}.`);
             fs.appendFileSync(process.env.GITHUB_OUTPUT, "skip=true\n");
             fs.writeFileSync(".skip-metals-cache", "1");
             process.exit(0);
@@ -87,7 +85,7 @@ jobs:
           }, null, 2));
 
           fs.appendFileSync(process.env.GITHUB_OUTPUT, "skip=false\n");
-          console.log(`Proceeding with metals cache run for ${slot.name}; cacheSlotKey ${cacheSlotKey}.`);
+          console.log(`Proceeding with metals cache slot ${cacheSlotKey}.`);
           '
 
           if [ -f .skip-metals-cache ]; then
