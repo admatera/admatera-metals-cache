@@ -93,12 +93,94 @@ jobs:
             exit 0
           fi
 
-          curl -fSsL --retry 3 --retry-delay 5 --max-time 60 \
-            "https://api.metals.dev/v1/latest?api_key=${API_KEY}&currency=USD" \
-            > metals-raw.json
+          attempted_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          printf 'fetch_success=false\n' >> "$GITHUB_OUTPUT"
 
-          node -e '
+          node - <<'NODE' "$attempted_at"
           const fs = require("fs");
+          const attemptedAt = process.argv[2];
+          const slotMeta = JSON.parse(fs.readFileSync(".metals-slot.json", "utf8"));
+          let prevStatus = {};
+          let prevMetals = {};
+          try { prevStatus = JSON.parse(fs.readFileSync("metals-status.json", "utf8")); } catch {}
+          try { prevMetals = JSON.parse(fs.readFileSync("metals.json", "utf8")); } catch {}
+
+          const status = {
+            lastAttemptedAt: attemptedAt,
+            lastSuccessfulAt: prevStatus.lastSuccessfulAt || prevMetals.cacheUpdatedAt || prevMetals.updatedAt || null,
+            lastError: null,
+            lastErrorAt: null,
+            lastSlotKey: slotMeta.cacheSlotKey,
+            lastMarketUpdatedAt: prevStatus.lastMarketUpdatedAt || prevMetals.marketUpdatedAt || null,
+            marketWindowET: slotMeta.marketWindowET,
+            source: "metals.dev"
+          };
+
+          fs.writeFileSync("metals-status.json", JSON.stringify(status, null, 2));
+          NODE
+
+          fetch_ok=0
+          curl_exit=0
+          rm -f metals-raw.json curl-error.log
+
+          for attempt in 1 2 3; do
+            if [ "$attempt" -gt 1 ]; then
+              case "$attempt" in
+                2) sleep 20 ;;
+                3) sleep 60 ;;
+              esac
+            fi
+
+            echo "Fetch attempt $attempt/3 for metals.dev..."
+            if curl -fSsL \
+              --retry 2 \
+              --retry-all-errors \
+              --retry-delay 5 \
+              --connect-timeout 20 \
+              --max-time 90 \
+              "https://api.metals.dev/v1/latest?api_key=${API_KEY}&currency=USD" \
+              > metals-raw.json 2> curl-error.log; then
+              fetch_ok=1
+              break
+            else
+              curl_exit=$?
+              echo "Attempt $attempt failed with curl exit $curl_exit."
+              cat curl-error.log || true
+            fi
+          done
+
+          if [ "$fetch_ok" -ne 1 ]; then
+            node - <<'NODE' "$attempted_at" "$curl_exit"
+            const fs = require("fs");
+            const attemptedAt = process.argv[2];
+            const curlExit = process.argv[3];
+            const slotMeta = JSON.parse(fs.readFileSync(".metals-slot.json", "utf8"));
+            let prevStatus = {};
+            let prevMetals = {};
+            try { prevStatus = JSON.parse(fs.readFileSync("metals-status.json", "utf8")); } catch {}
+            try { prevMetals = JSON.parse(fs.readFileSync("metals.json", "utf8")); } catch {}
+            let errText = "Unknown fetch failure";
+            try {
+              errText = fs.readFileSync("curl-error.log", "utf8").trim() || errText;
+            } catch {}
+            const status = {
+              lastAttemptedAt: attemptedAt,
+              lastSuccessfulAt: prevStatus.lastSuccessfulAt || prevMetals.cacheUpdatedAt || prevMetals.updatedAt || null,
+              lastError: `curl exit ${curlExit}: ${errText}`,
+              lastErrorAt: attemptedAt,
+              lastSlotKey: slotMeta.cacheSlotKey,
+              lastMarketUpdatedAt: prevStatus.lastMarketUpdatedAt || prevMetals.marketUpdatedAt || null,
+              marketWindowET: slotMeta.marketWindowET,
+              source: "metals.dev"
+            };
+            fs.writeFileSync("metals-status.json", JSON.stringify(status, null, 2));
+            NODE
+            exit 0
+          fi
+
+          node - <<'NODE' "$attempted_at"
+          const fs = require("fs");
+          const attemptedAt = process.argv[2];
           const raw = JSON.parse(fs.readFileSync("metals-raw.json", "utf8"));
           if (!raw || !raw.metals) throw new Error("No metals field in API response");
 
@@ -162,13 +244,39 @@ jobs:
           if (!out.items.length) throw new Error("No metal prices computed");
           out.items.sort((a, b) => b.usdPerGram - a.usdPerGram);
           fs.writeFileSync("metals.json", JSON.stringify(out, null, 2));
-          '
+
+          const status = {
+            lastAttemptedAt: attemptedAt,
+            lastSuccessfulAt: cacheUpdatedAt,
+            lastError: null,
+            lastErrorAt: null,
+            lastSlotKey: slotMeta.cacheSlotKey,
+            lastMarketUpdatedAt: marketUpdatedAt,
+            marketWindowET: slotMeta.marketWindowET,
+            source: "metals.dev"
+          };
+          fs.writeFileSync("metals-status.json", JSON.stringify(status, null, 2));
+          NODE
+
+          printf 'fetch_success=true\n' >> "$GITHUB_OUTPUT"
 
       - name: Commit & push
         if: steps.fetch_metals.outputs.skip != 'true'
+        env:
+          FETCH_SUCCESS: ${{ steps.fetch_metals.outputs.fetch_success }}
         run: |
           git config user.name "admatera-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add metals-raw.json metals.json
-          git commit -m "update cache $(date -u +'%F %T UTC')" || echo "no changes"
+          git add metals-status.json metals-raw.json metals.json
+          if [ "$FETCH_SUCCESS" = "true" ]; then
+            git commit -m "update cache $(date -u +'%F %T UTC')" || echo "no changes"
+          else
+            git commit -m "update metals status $(date -u +'%F %T UTC')" || echo "no changes"
+          fi
           git push
+
+      - name: Fail workflow if fetch never succeeded
+        if: steps.fetch_metals.outputs.skip != 'true' && steps.fetch_metals.outputs.fetch_success != 'true'
+        run: |
+          echo "Metals fetch failed after bounded retries. metals-status.json was updated for diagnosis."
+          exit 1
