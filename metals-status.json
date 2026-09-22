@@ -1,10 +1,10 @@
 {
-  "lastAttemptedAt": "2026-09-21T22:16:00.829Z",
-  "lastSuccessfulAt": "2026-09-21T22:16:01.057Z",
+  "lastAttemptedAt": "2026-09-22T17:33:45.566Z",
+  "lastSuccessfulAt": "2026-09-22T17:33:45.748Z",
   "lastError": null,
   "lastErrorAt": null,
-  "lastSlotKey": "2026-09-21-1635",
-  "lastMarketUpdatedAt": "2026-09-21T22:15:04.044Z",
-  "marketWindowET": "16:35 ET",
+  "lastSlotKey": "2026-09-22-0945",
+  "lastMarketUpdatedAt": "2026-09-22T17:33:15.797Z",
+  "marketWindowET": "09:45 ET",
   "source": "metals.dev"
 }
