@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-11-05T20:30:00.413Z",
-  "cacheUpdatedAt": "2026-11-05T20:30:00.413Z",
-  "marketUpdatedAt": "2026-11-05T20:29:03.764Z",
-  "cacheSlotKey": "2026-11-05-0945",
-  "marketWindowET": "09:45 ET",
+  "updatedAt": "2026-11-06T00:34:28.862Z",
+  "cacheUpdatedAt": "2026-11-06T00:34:28.862Z",
+  "marketUpdatedAt": "2026-11-06T00:34:06.052Z",
+  "cacheSlotKey": "2026-11-05-1635",
+  "marketWindowET": "16:35 ET",
   "source": "metals.dev",
   "items": [
     {
@@ -11,32 +11,32 @@
       "symbol": "Au",
       "name": "Gold",
       "unit": "USD/oz t",
-      "nativePrice": 4105.445,
-      "usdPerGram": 131.993023
+      "nativePrice": 4102.05,
+      "usdPerGram": 131.883872
     },
     {
       "code": "platinum",
       "symbol": "Pt",
       "name": "Platinum",
       "unit": "USD/oz t",
-      "nativePrice": 1524.895,
-      "usdPerGram": 49.026476
+      "nativePrice": 1521.7,
+      "usdPerGram": 48.923755
     },
     {
       "code": "palladium",
       "symbol": "Pd",
       "name": "Palladium",
       "unit": "USD/oz t",
-      "nativePrice": 1042.762,
-      "usdPerGram": 33.525552
+      "nativePrice": 1034.693,
+      "usdPerGram": 33.266128
     },
     {
       "code": "silver",
       "symbol": "Ag",
       "name": "Silver",
       "unit": "USD/oz t",
-      "nativePrice": 52.149,
-      "usdPerGram": 1.676628
+      "nativePrice": 52.077,
+      "usdPerGram": 1.674313
     },
     {
       "code": "nickel",
@@ -51,8 +51,8 @@
       "symbol": "Cu",
       "name": "Copper",
       "unit": "USD/ton",
-      "nativePrice": 13883.2916,
-      "usdPerGram": 0.013883
+      "nativePrice": 13936.9742,
+      "usdPerGram": 0.013937
     },
     {
       "code": "zinc",
